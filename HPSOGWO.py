@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Nov 23 21:29:10 2020
-
 @author: ZongSing_NB
-
 Main reference:
 https://doi.org/10.1016/j.advengsoft.2013.12.007
 https://seyedalimirjalili.com/gwo
@@ -25,11 +23,11 @@ class HPSOGWO():
         self.x_min = x_min
         self.a_max = a_max
         self.a_min = a_min
-        self.C1 = 0.5
-        self.C2 = 0.5
-        self.C3 = 0.5
+        self.c1 = 0.5
+        self.c2 = 0.5
+        self.c3 = 0.5
         self.w = 0.5 + np.random.uniform()/2
-        
+
         self._iter = 0
         self.gBest_X = None
         self.gBest_score = np.inf
@@ -41,60 +39,53 @@ class HPSOGWO():
         self.X_beta = None
         self.X_delta = None
 
-        self.X = np.random.choice(2, size=[self.num_particle, self.num_dim]).astype(float)
-        self.V = 0.3 * np.random.normal(size=[self.num_particle, self.num_dim])
-        
+        self.X = np.random.uniform(low=self.x_min, high=self.x_max, size=[self.num_particle, self.num_dim])
+        self.V = np.random.uniform(low=self.x_min, high=self.x_max, size=[self.num_particle, self.num_dim])
+
         self.update_score()
-        
+
         self._itter = self._iter + 1
 
-        
+
     def opt(self):
         while(self._iter<self.max_iter):
-            a = self.a_max - (self.a_max-self.a_min)*(self._iter/self.max_iter) # (8)
-            
+            a = self.a_max - (self.a_max-self.a_min)*(self._iter/self.max_iter)
+
             for i in range(self.num_particle):
                 r1 = np.random.uniform(size=self.num_dim)
                 r2 = np.random.uniform(size=self.num_dim)
-                A = 2*a*r1 - a # (3)
-                D = np.abs(self.C1*self.X_alpha - self.w*self.X[i, :]) #(19)
-                cstep_alpha = 1/(1+np.exp(-10*A*D-0.5)) # (18)
-                bstep_alpha = (cstep_alpha >= np.random.uniform(size=self.num_dim))*1 # (17)
-                X1 = (self.X_alpha + bstep_alpha)>=1 # (16)
-                
+                A = 2*a*r1 - a
+                D = np.abs(self.c1*self.X_alpha - self.w*self.X[i, :])
+                X1 = self.X_alpha - A*D
+
                 r1 = np.random.uniform(size=self.num_dim)
                 r2 = np.random.uniform(size=self.num_dim)
-                A = 2*a*r1 - a # (3)
-                D = np.abs(self.C2*self.X_beta - self.w*self.X[i, :]) #(19)
-                cstep_beta = 1/(1+np.exp(-10*A*D-0.5)) # (18)
-                bstep_beta = (cstep_beta >= np.random.uniform(size=self.num_dim))*1 # (17)
-                X2 = (self.X_beta + bstep_beta)>=1 # (16)
-                
+                A = 2*a*r1 - a
+                D = np.abs(self.c2*self.X_beta - self.w*self.X[i, :])
+                X2 = self.X_beta - A*D
+
                 r1 = np.random.uniform(size=self.num_dim)
                 r2 = np.random.uniform(size=self.num_dim)
-                A = 2*a*r1 - a # (3)
-                D = np.abs(self.C3*self.X_delta - self.w*self.X[i, :]) #(19)
-                cstep_delta = 1/(1+np.exp(-10*A*D-0.5)) # (18)
-                bstep_delta = (cstep_delta >= np.random.uniform(size=self.num_dim))*1 # (17)
-                X3 = (self.X_delta + bstep_delta)>=1 # (16)
+                A = 2*a*r1 - a
+                D = np.abs(self.c3*self.X_delta - self.w*self.X[i, :])
+                X3 = self.X_delta - A*D
 
                 r1 = np.random.uniform(size=self.num_dim)
                 r2 = np.random.uniform(size=self.num_dim)
                 r3 = np.random.uniform(size=self.num_dim)
-                self.V[i, :] = self.w*(self.V[i, :] \
-                                       + self.C1*r1*(X1-self.X[i, :])
-                                       + self.C2*r2*(X2-self.X[i, :])
-                                       + self.C3*r3*(X3-self.X[i, :])) # (20)
-                self.X[i, :] = self.sigmoid((X1+X2+X3)/3) + self.V[i, :] # (21)
-                
-                self.X[i, :] = self.X[i, :] >= np.random.uniform(size=self.num_dim) # (14)
-                
-            # self.X = np.clip(self.X, self.x_min, self.x_max)
-            
+                self.V[i, :] = self.w*(self.V[i, :] 
+                                       + self.c1*r1*(X1-self.X[i, :])
+                                       + self.c2*r2*(X2-self.X[i, :])
+                                       + self.c3*r3*(X3-self.X[i, :]))
+
+                self.X[i, :] = self.X[i, :] + self.V[i, :]
+
+            self.X = np.clip(self.X, self.x_min, self.x_max)
+
             self.update_score()
-            
+
             self._iter = self._iter + 1
-        
+
     def plot_curve(self):
         plt.figure()
         plt.title('loss curve ['+str(round(self.gBest_curve[-1], 3))+']')
@@ -102,26 +93,22 @@ class HPSOGWO():
         plt.grid()
         plt.legend()
         plt.show()
-    
+
     def update_score(self):
         score_all = self.fit_func(self.X)
         for idx, score in  enumerate(score_all):
             if score<self.score_alpha:
                 self.score_alpha = score.copy()
                 self.X_alpha = self.X[idx, :].copy()
-                
+
             if score>self.score_alpha and score<self.score_beta:
                 self.score_beta = score.copy()
                 self.X_beta = self.X[idx, :].copy()
-            
+
             if score>self.score_alpha and score>self.score_beta and score<self.score_delta:
                 self.score_delta = score.copy()
                 self.X_delta = self.X[idx, :].copy()
-        
+
         self.gBest_X = self.X_alpha.copy()
         self.gBest_score = self.score_alpha.copy()
         self.gBest_curve[self._iter] = self.score_alpha.copy()
-    
-    def sigmoid(self, x):
-        return 1/(1+np.exp(-10*(x-0.5))) # (15)
-            
