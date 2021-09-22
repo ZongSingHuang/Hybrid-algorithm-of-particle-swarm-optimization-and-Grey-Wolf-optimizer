@@ -1,7 +1,9 @@
 Singh, N., & Singh, S. B. (2017). Hybrid Algorithm of Particle Swarm Optimization and Grey Wolf Optimizer for Improving Convergence Performance. Journal of Applied Mathematics, 2017, 1–15. doi:10.1155/2017/2030489
 
-https://doi.org/10.1155/2017/2030489
-
 ref:https://in.mathworks.com/matlabcentral/fileexchange/68776-hybrid-gwopso-optimization
 
-the parameter need to fine-tuning
+1. 重新優化了測試腳本
+
+2. 測試腳本請參考我的另一個作品https://github.com/ZongSingHuang/Metaheuristic-benchmark
+
+3. 礙於計算全部的測試函數所需時間太長，因此我只測前36個測試函數
